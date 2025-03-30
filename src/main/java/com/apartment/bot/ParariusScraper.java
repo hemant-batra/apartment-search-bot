@@ -275,7 +275,7 @@ public class ParariusScraper {
         Message message = new MimeMessage(session);
         message.setFrom(new InternetAddress(from));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-        message.setSubject("Your apartment search history on " + new SimpleDateFormat("dd MMMM, yyyy").format(new Date()));
+        message.setSubject("Your apartment search history on " + new SimpleDateFormat("dd MMMM yyyy").format(new Date()));
 
         String htmlContent = generateHtmlTable(apartments);
         message.setContent(htmlContent, "text/html; charset=utf-8");
