@@ -36,8 +36,8 @@ public class ParariusScraper {
                 case "SEARCH" -> CITIES.forEach(ParariusScraper::searchCity);
                 case "HEARTBEAT" -> heartbeat();
                 case "RESET" -> clearHistory();
+                default -> System.out.printf("Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET", action);
             }
-            System.out.println(STR."Invalid action: \{action}. Expected one of SEARCH | HEARTBEAT | RESET");
         } else {
             System.out.println("Usage: ParariusScraper SEARCH | HEARTBEAT | RESET");
         }
