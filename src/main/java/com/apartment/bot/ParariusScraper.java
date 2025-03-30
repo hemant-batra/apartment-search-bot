@@ -37,6 +37,9 @@ public class ParariusScraper {
                 case "HEARTBEAT" -> heartbeat();
                 case "RESET" -> clearHistory();
             }
+            System.out.println(STR."Invalid action: \{action}. Expected one of SEARCH | HEARTBEAT | RESET");
+        } else {
+            System.out.println("Usage: ParariusScraper SEARCH | HEARTBEAT | RESET");
         }
     }
 
