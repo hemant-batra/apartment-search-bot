@@ -1,5 +1,6 @@
 package com.apartment.bot;
 
+import com.google.gson.GsonBuilder;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -7,6 +8,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -17,33 +19,33 @@ import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.util.*;
 
+@Component
 public class ParariusScraper {
 
-    private static final List<String> CITIES = Arrays.asList("wageningen", "ede", "arnhem", "bennekom", "veenendaal");
-    private static final int MAX_RENT = 1300;
+    private final List<String> CITIES = Arrays.asList("wageningen", "ede", "arnhem", "bennekom", "veenendaal");
+    private final int MAX_RENT = 1300;
 
-    private static final String DB_URL = "jdbc:postgresql://dpg-cvknac24d50c73dtk7ag-a.frankfurt-postgres.render.com/apartment_search";
-    private static final String DB_USER = "apartment_search";
-    private static final String DB_PASSWORD = "Il6u68sRDJ1dgOMsXo9FmspMqXgMpjaC";
+    private final String DB_URL = "jdbc:postgresql://dpg-cvknac24d50c73dtk7ag-a.frankfurt-postgres.render.com/apartment_search";
+    private final String DB_USER = "apartment_search";
+    private final String DB_PASSWORD = "Il6u68sRDJ1dgOMsXo9FmspMqXgMpjaC";
 
-    private static final String PUSHOVER_USER_KEY = "u1kkpk442tbarr5dz1egtdfuumrngn";
-    private static final String PUSHOVER_API_TOKEN = "ak1cvhpycz66kaymmiobmdyr6rbnpe";
+    private final String PUSHOVER_USER_KEY = "u1kkpk442tbarr5dz1egtdfuumrngn";
+    private final String PUSHOVER_API_TOKEN = "ak1cvhpycz66kaymmiobmdyr6rbnpe";
 
-    public static void main(String[] args) {
-        if (args.length > 0) {
-            String action = args[0];
-            switch (action) {
-                case "SEARCH" -> CITIES.forEach(ParariusScraper::searchCity);
-                case "HEARTBEAT" -> heartbeat();
-                case "RESET" -> clearHistory();
-                default -> System.out.printf("Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET", action);
-            }
-        } else {
-            System.out.println("Usage: ParariusScraper SEARCH | HEARTBEAT | RESET");
+    private final List<String> logs = new ArrayList<>();
+
+    public String perform(String action) {
+        logs.clear();
+        switch (action) {
+            case "SEARCH" -> CITIES.forEach(this::searchCity);
+            case "HEARTBEAT" -> heartbeat();
+            case "RESET" -> clearHistory();
+            default -> println(String.format("Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET", action));
         }
+        return new GsonBuilder().setPrettyPrinting().create().toJson(logs);
     }
 
-    private static void clearHistory() {
+    private void clearHistory() {
         String deleteSQL = "DELETE FROM notified_apartments";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
@@ -51,17 +53,17 @@ public class ParariusScraper {
 
             int rowsAffected = stmt.executeUpdate();
             String message = "\uD83D\uDDD1\uFE0F Deleted " + rowsAffected + " records from history.";
-            System.out.println(message);
+            println(message);
             sendPushoverNotification(message);
 
         } catch (SQLException e) {
             String message = "❌ Failed to clear history: " + e.getMessage();
-            System.out.println(message);
+            println(message);
             sendPushoverNotification(message);
         }
     }
 
-    private static void heartbeat() {
+    private void heartbeat() {
         if (testDatabaseConnection()) {
             sendPushoverNotification("❤️ I love searching apartments!");
         } else {
@@ -69,27 +71,27 @@ public class ParariusScraper {
         }
     }
 
-    private static boolean testDatabaseConnection() {
+    private boolean testDatabaseConnection() {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
             Optional.ofNullable(sendMail(conn)).ifPresent(errorMessage -> sendPushoverNotification("❌ " + errorMessage));
             return true;
         } catch (SQLException e) {
-            System.out.println("❌ Database connection failed: " + e.getMessage());
+            println("❌ Database connection failed: " + e.getMessage());
             return false;
         }
     }
 
-    private static void searchCity(String city) {
+    private void searchCity(String city) {
         String url = String.format("https://www.pararius.com/apartments/%s/200-%d", city, MAX_RENT);
-        System.out.println("\n🔍 Searching apartments in: " + capitalize(city));
+        println("\n🔍 Searching apartments in: " + capitalize(city));
         try {
             scrapeCity(city, url);
         } catch (IOException e) {
-            System.out.println("❗ Error fetching " + city + ": " + e.getMessage());
+            println("❗ Error fetching " + city + ": " + e.getMessage());
         }
     }
 
-    private static void scrapeCity(String city, String url) throws IOException {
+    private void scrapeCity(String city, String url) throws IOException {
         Document doc = Jsoup.connect(url)
                 .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")
                 .timeout(10000)
@@ -97,7 +99,7 @@ public class ParariusScraper {
 
         Elements listings = doc.select("section.listing-search-item");
         if (listings.isEmpty()) {
-            System.out.println("No listings found.");
+            println("No listings found.");
             return;
         }
 
@@ -114,24 +116,24 @@ public class ParariusScraper {
                 String address = addressElement != null ? addressElement.text().trim() : "N/A";
 
                 if (isUrlNotified(conn, link)) {
-                    System.out.println("⏭ Skipping already notified: " + link);
+                    println("⏭ Skipping already notified: " + link);
                     continue;
                 }
 
                 String message = String.format("🌍 %s\n🏠 %s\n📍 %s\n💰 %s\n🔗 %s", capitalize(city), title, address, price, link);
-                System.out.println(message);
-                System.out.println("----------------------------");
+                println(message);
+                println("----------------------------");
 
                 if (sendPushoverNotification(message)) {
                     storeNotifiedApartment(conn, capitalize(city), title, address, price, link);
                 }
             }
         } catch (SQLException e) {
-            System.out.println("❗ Database error: " + e.getMessage());
+            println("❗ Database error: " + e.getMessage());
         }
     }
 
-    private static String sendMail(Connection conn) {
+    private String sendMail(Connection conn) {
         try {
             sendEmail(getAll(conn));
             return null;
@@ -141,7 +143,7 @@ public class ParariusScraper {
         }
     }
 
-    private static List<Map<String, String>> getAll(Connection conn) throws SQLException {
+    private List<Map<String, String>> getAll(Connection conn) throws SQLException {
         List<Map<String, String>> apartments = new ArrayList<>();
         String query = "SELECT * FROM notified_apartments";
 
@@ -161,7 +163,7 @@ public class ParariusScraper {
         return apartments;
     }
 
-    private static boolean isUrlNotified(Connection conn, String url) throws SQLException {
+    private boolean isUrlNotified(Connection conn, String url) throws SQLException {
         String query = "SELECT 1 FROM notified_apartments WHERE link = ?";
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
             stmt.setString(1, url);
@@ -170,7 +172,7 @@ public class ParariusScraper {
         }
     }
 
-    private static void storeNotifiedApartment(Connection conn, String city, String place, String location, String price, String link) throws SQLException {
+    private void storeNotifiedApartment(Connection conn, String city, String place, String location, String price, String link) throws SQLException {
         String insert = "INSERT INTO notified_apartments (city, place, location, price, link) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(insert)) {
             stmt.setString(1, city);
@@ -182,7 +184,7 @@ public class ParariusScraper {
         }
     }
 
-    private static boolean sendPushoverNotification(String message) {
+    private boolean sendPushoverNotification(String message) {
         try {
             String urlString = "https://api.pushover.net/1/messages.json";
             String params = String.format("token=%s&user=%s&message=%s",
@@ -202,24 +204,24 @@ public class ParariusScraper {
 
             int responseCode = conn.getResponseCode();
             if (responseCode == 200) {
-                System.out.println("✅ Pushover notification sent successfully!");
+                println("✅ Pushover notification sent successfully!");
                 return true;
             } else {
                 String responseMessage = new String(conn.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
-                System.out.println("❗ Failed to send Pushover notification, response code: " + responseCode);
-                System.out.println("🔎 Pushover Response: " + responseMessage);
+                println("❗ Failed to send Pushover notification, response code: " + responseCode);
+                println("🔎 Pushover Response: " + responseMessage);
             }
         } catch (IOException e) {
-            System.out.println("❗ Error sending Pushover notification: " + e.getMessage());
+            println("❗ Error sending Pushover notification: " + e.getMessage());
         }
         return false;
     }
 
-    private static String capitalize(String input) {
+    private String capitalize(String input) {
         return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
-    private static String generateHtmlTable(List<Map<String, String>> apartments) {
+    private String generateHtmlTable(List<Map<String, String>> apartments) {
         StringBuilder html = new StringBuilder();
         html.append("<html><body>");
         html.append("<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse; width: 100%;'>");
@@ -248,7 +250,7 @@ public class ParariusScraper {
         return html.toString();
     }
 
-    private static void sendEmail(List<Map<String, String>> apartments) throws MessagingException {
+    private void sendEmail(List<Map<String, String>> apartments) throws MessagingException {
         String host = "smtp.gmail.com";
         //String password = "v9$Gx@3!LpZqW7#Y";
         String password = "ouml rerv wzyu mnbj";
@@ -277,7 +279,12 @@ public class ParariusScraper {
         message.setContent(htmlContent, "text/html; charset=utf-8");
 
         Transport.send(message);
-        System.out.println("Email sent successfully to " + to);
+        println("Email sent successfully to " + to);
+    }
+
+    private void println(String msg) {
+        System.out.println(msg);
+        logs.add(msg);
     }
 
 }
