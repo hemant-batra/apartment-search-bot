@@ -17,7 +17,9 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.Date;
 
 @Component
 public class ParariusScraper {
@@ -273,7 +275,7 @@ public class ParariusScraper {
         Message message = new MimeMessage(session);
         message.setFrom(new InternetAddress(from));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-        message.setSubject("Your apartment search history");
+        message.setSubject("Your apartment search history on " + new SimpleDateFormat("dd MMMM, yyyy").format(new Date()));
 
         String htmlContent = generateHtmlTable(apartments);
         message.setContent(htmlContent, "text/html; charset=utf-8");
