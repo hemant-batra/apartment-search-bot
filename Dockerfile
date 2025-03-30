@@ -1,5 +1,5 @@
 # Use an official Maven image to build the JAR
-FROM maven:3.8.6-openjdk-21 AS build
+FROM maven:3.8.6-openjdk-17 AS build
 
 # Set working directory
 WORKDIR /app
@@ -10,7 +10,7 @@ COPY . .
 # Build the JAR file using Maven
 RUN mvn clean package -DskipTests
 
-# Use a lightweight JDK image for runtime
+# Use a lightweight JDK 21 image for runtime
 FROM eclipse-temurin:21-jdk AS runtime
 
 # Set working directory
