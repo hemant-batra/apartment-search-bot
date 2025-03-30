@@ -5,6 +5,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 
 @RestController
@@ -18,7 +20,7 @@ public class ParariusScraperController {
     }
 
     @GetMapping(value = "/{action}", produces = APPLICATION_JSON_VALUE)
-    public String scrape(@PathVariable String action) {
+    public List<String> scrape(@PathVariable String action) {
         return parariusScraper.perform(action);
     }
 }

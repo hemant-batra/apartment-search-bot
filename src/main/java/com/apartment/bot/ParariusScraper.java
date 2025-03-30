@@ -1,6 +1,5 @@
 package com.apartment.bot;
 
-import com.google.gson.GsonBuilder;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
@@ -18,8 +17,8 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.SimpleDateFormat;
-import java.util.*;
 import java.util.Date;
+import java.util.*;
 
 @Component
 public class ParariusScraper {
@@ -36,7 +35,7 @@ public class ParariusScraper {
 
     private final List<String> logs = new ArrayList<>();
 
-    public String perform(String action) {
+    public List<String> perform(String action) {
         logs.clear();
         switch (action) {
             case "SEARCH" -> CITIES.forEach(this::searchCity);
@@ -44,7 +43,7 @@ public class ParariusScraper {
             case "RESET" -> clearHistory();
             default -> println(String.format("Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET", action));
         }
-        return new GsonBuilder().setPrettyPrinting().create().toJson(logs);
+        return logs;
     }
 
     private void clearHistory() {
