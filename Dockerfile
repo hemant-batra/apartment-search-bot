@@ -1,13 +1,25 @@
-# Use an official OpenJDK runtime as a parent image
-FROM eclipse-temurin:21-jdk
+# Use an official Maven image to build the JAR
+FROM eclipse-temurin:21-jdk AS build
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy the built JAR file (Make sure to run `mvn package` before building the image)
-COPY target/pararius-scraper-1.0-SNAPSHOT.jar app.jar
+# Copy project files
+COPY . .
 
-# Expose the port your Spring Boot application runs on
+# Build the JAR file
+RUN ./mvnw clean package -DskipTests
+
+# Use a lightweight JDK image for runtime
+FROM eclipse-temurin:21-jdk AS runtime
+
+# Set working directory
+WORKDIR /app
+
+# Copy the built JAR from the previous stage
+COPY --from=build /app/target/*.jar app.jar
+
+# Expose the port
 EXPOSE 8080
 
 # Run the application
