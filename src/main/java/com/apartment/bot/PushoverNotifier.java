@@ -24,7 +24,7 @@ public class PushoverNotifier {
 
     public PushoverNotifier(LogUtil logUtil) {
         // Start a scheduled task to process messages every 1 minute
-        scheduler.scheduleAtFixedRate(this::processQueue, 0, 1, TimeUnit.MINUTES);
+        scheduler.scheduleAtFixedRate(this::processQueue, 0, 10, TimeUnit.SECONDS);
         this.logUtil = logUtil;
     }
 
@@ -42,6 +42,7 @@ public class PushoverNotifier {
     }
 
     private boolean sendPushoverNotification(String message) {
+        logUtil.println("Sending pushover notification: " + message);
         try {
             String urlString = "https://api.pushover.net/1/messages.json";
             String params = String.format("token=%s&user=%s&message=%s",
