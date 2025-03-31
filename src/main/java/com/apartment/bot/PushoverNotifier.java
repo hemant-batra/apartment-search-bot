@@ -30,7 +30,7 @@ public class PushoverNotifier {
 
     public boolean queueNotification(String message) {
         boolean status = messageQueue.offer(message);
-        logUtil.println("Pushover notification queuing status = " + status + ", message = " + System.lineSeparator() + message);
+        logUtil.println("Pushover notification queuing status = " + status + System.lineSeparator() + message);
         return status;
     }
 
@@ -42,7 +42,7 @@ public class PushoverNotifier {
     }
 
     private boolean sendPushoverNotification(String message) {
-        logUtil.println("Sending pushover notification: " + message);
+        logUtil.println("Sending pushover notification" + System.lineSeparator() + message);
         try {
             String urlString = "https://api.pushover.net/1/messages.json";
             String params = String.format("token=%s&user=%s&message=%s",

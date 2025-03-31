@@ -40,8 +40,10 @@ public class ParariusScraper {
             case "HEARTBEAT" -> heartbeat();
             case "RESET" -> clearHistory();
             case "DELETE" -> deleteRowWithId(id);
-            default ->
-                    logUtil.println(String.format("Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET | DELETE", action));
+            default -> {
+                String message = "Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET | DELETE";
+                logUtil.println(String.format(message, action));
+            }
         }
         return logUtil.getLogs();
     }
