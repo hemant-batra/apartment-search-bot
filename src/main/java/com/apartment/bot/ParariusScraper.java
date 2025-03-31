@@ -33,7 +33,7 @@ public class ParariusScraper {
         this.notifier = notifier;
     }
 
-    public List<String> perform(String action, int id) {
+    public List<String> perform(String action, Integer id) {
         logUtil.clearLogs();
         switch (action) {
             case "SEARCH" -> CITIES.forEach(this::searchCity);
@@ -46,7 +46,13 @@ public class ParariusScraper {
         return logUtil.getLogs();
     }
 
-    private void deleteRowWithId(int id) {
+    private void deleteRowWithId(Integer id) {
+
+        if (id == null) {
+            logUtil.println("Id is null");
+            return;
+        }
+
         String deleteSQL = "DELETE FROM notified_apartments where ID = " + id;
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
