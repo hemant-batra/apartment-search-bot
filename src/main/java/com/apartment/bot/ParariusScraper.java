@@ -47,43 +47,43 @@ public class ParariusScraper {
     }
 
     private void deleteRowWithId(Integer id) {
-
         if (id == null) {
-            logUtil.println("Id is null");
+            logUtil.println("❗ Id is null, deletion aborted.");
             return;
         }
 
-        String deleteSQL = "DELETE FROM notified_apartments where ID = " + id;
+        String deleteSQL = "DELETE FROM notified_apartments WHERE ID = ?";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
              PreparedStatement stmt = conn.prepareStatement(deleteSQL)) {
 
-            String message;
+            stmt.setInt(1, id); // Use parameterized query to prevent SQL injection
+
             int rowsAffected = stmt.executeUpdate();
-            switch (rowsAffected) {
-                case 0 -> message = "No records deleted";
-                case 1 -> message = "\uD83D\uDDD1\uFE0F Deleted record from table with id " + id;
-                default -> message = "Rows deleted = " + rowsAffected;
-            }
+            String message = switch (rowsAffected) {
+                case 0 -> "⚠ No records found with ID: " + id;
+                case 1 -> "\uD83D\uDDD1\uFE0F Deleted record with ID " + id;
+                default -> "⚠ Unexpected! Rows deleted = " + rowsAffected;
+            };
 
             logUtil.println(message);
             notifier.queueNotification(message);
 
         } catch (SQLException e) {
-            String message = "❌ Failed to delete record with id " + id + " due to error: " + e.getMessage();
+            String message = "❌ Failed to delete record with ID " + id + " - Error: " + e.getMessage();
             logUtil.println(message);
             notifier.queueNotification(message);
         }
     }
 
     private void clearHistory() {
-        String deleteSQL = "DELETE FROM notified_apartments";
+        String truncateSQL = "TRUNCATE TABLE notified_apartments RESTART IDENTITY";
 
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
-             PreparedStatement stmt = conn.prepareStatement(deleteSQL)) {
+             PreparedStatement stmt = conn.prepareStatement(truncateSQL)) {
 
-            int rowsAffected = stmt.executeUpdate();
-            String message = "\uD83D\uDDD1\uFE0F Deleted " + rowsAffected + " records from history.";
+            stmt.executeUpdate(); // TRUNCATE does not return affected rows
+            String message = "\uD83D\uDDD1\uFE0F Cleared history and reset ID counter.";
             logUtil.println(message);
             notifier.queueNotification(message);
 
