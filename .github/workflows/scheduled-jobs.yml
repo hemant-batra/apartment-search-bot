@@ -13,8 +13,8 @@ jobs:
       - name: Call HEARTBEAT API
         run: curl -X GET https://apartment-search-bot.onrender.com/scraper/HEARTBEAT
 
-  search:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Call SEARCH API
-        run: curl -X GET https://apartment-search-bot.onrender.com/scraper/SEARCH
+#  search:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Call SEARCH API
+#        run: curl -X GET https://apartment-search-bot.onrender.com/scraper/SEARCH
