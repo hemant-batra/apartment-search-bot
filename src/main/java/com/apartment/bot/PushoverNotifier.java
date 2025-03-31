@@ -13,8 +13,8 @@ import java.util.concurrent.*;
 
 @Component
 public class PushoverNotifier {
-
-    private final String PUSHOVER_USER_KEY = "u1kkpk442tbarr5dz1egtdfuumrngn";
+    private final String PUSHOVER_USER_KEY = "u7gru2v16gcnsid28ftgkpf6xzkoy1"; // Aditi
+    //private final String PUSHOVER_USER_KEY = "u1kkpk442tbarr5dz1egtdfuumrngn"; // Hemant
     private final String PUSHOVER_API_TOKEN = "ak1cvhpycz66kaymmiobmdyr6rbnpe";
 
     private LogUtil logUtil;
@@ -24,7 +24,7 @@ public class PushoverNotifier {
 
     public PushoverNotifier(LogUtil logUtil) {
         // Start a scheduled task to process messages every 1 minute
-        scheduler.scheduleAtFixedRate(this::processQueue, 0, 10, TimeUnit.SECONDS);
+        scheduler.scheduleAtFixedRate(this::processQueue, 300, 10, TimeUnit.SECONDS);
         this.logUtil = logUtil;
     }
 

@@ -85,7 +85,7 @@ public class ParariusScraper {
              PreparedStatement stmt = conn.prepareStatement(truncateSQL)) {
 
             stmt.executeUpdate(); // TRUNCATE does not return affected rows
-            String message = "\uD83D\uDDD1\uFE0F Cleared history and reset ID counter.";
+            String message = "\uD83D\uDDD1\uFE0F Cleared history.";
             logUtil.println(message);
             notifier.queueNotification(message);
 
