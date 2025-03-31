@@ -10,11 +10,6 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -30,20 +25,49 @@ public class ParariusScraper {
     private final String DB_USER = "apartment_search";
     private final String DB_PASSWORD = "Il6u68sRDJ1dgOMsXo9FmspMqXgMpjaC";
 
-    private final String PUSHOVER_USER_KEY = "u1kkpk442tbarr5dz1egtdfuumrngn";
-    private final String PUSHOVER_API_TOKEN = "ak1cvhpycz66kaymmiobmdyr6rbnpe";
+    private LogUtil logUtil;
+    private PushoverNotifier notifier;
 
-    private final List<String> logs = new ArrayList<>();
+    public ParariusScraper(LogUtil logUtil, PushoverNotifier notifier) {
+        this.logUtil = logUtil;
+        this.notifier = notifier;
+    }
 
-    public List<String> perform(String action) {
-        logs.clear();
+    public List<String> perform(String action, int id) {
+        logUtil.clearLogs();
         switch (action) {
             case "SEARCH" -> CITIES.forEach(this::searchCity);
             case "HEARTBEAT" -> heartbeat();
             case "RESET" -> clearHistory();
-            default -> println(String.format("Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET", action));
+            case "DELETE" -> deleteRowWithId(id);
+            default ->
+                    logUtil.println(String.format("Invalid action: %s. Expected one of SEARCH | HEARTBEAT | RESET | DELETE", action));
         }
-        return logs;
+        return logUtil.getLogs();
+    }
+
+    private void deleteRowWithId(int id) {
+        String deleteSQL = "DELETE FROM notified_apartments where ID = " + id;
+
+        try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+             PreparedStatement stmt = conn.prepareStatement(deleteSQL)) {
+
+            String message;
+            int rowsAffected = stmt.executeUpdate();
+            switch (rowsAffected) {
+                case 0 -> message = "No records deleted";
+                case 1 -> message = "\uD83D\uDDD1\uFE0F Deleted record from table with id " + id;
+                default -> message = "Rows deleted = " + rowsAffected;
+            }
+
+            logUtil.println(message);
+            notifier.queueNotification(message);
+
+        } catch (SQLException e) {
+            String message = "❌ Failed to delete record with id " + id + " due to error: " + e.getMessage();
+            logUtil.println(message);
+            notifier.queueNotification(message);
+        }
     }
 
     private void clearHistory() {
@@ -54,41 +78,41 @@ public class ParariusScraper {
 
             int rowsAffected = stmt.executeUpdate();
             String message = "\uD83D\uDDD1\uFE0F Deleted " + rowsAffected + " records from history.";
-            println(message);
-            sendPushoverNotification(message);
+            logUtil.println(message);
+            notifier.queueNotification(message);
 
         } catch (SQLException e) {
             String message = "❌ Failed to clear history: " + e.getMessage();
-            println(message);
-            sendPushoverNotification(message);
+            logUtil.println(message);
+            notifier.queueNotification(message);
         }
     }
 
     private void heartbeat() {
         if (testDatabaseConnection()) {
-            sendPushoverNotification("❤️ I love searching apartments!");
+            notifier.queueNotification("❤️ I love searching apartments!");
         } else {
-            sendPushoverNotification("❌ Unable to connect to the database!");
+            notifier.queueNotification("❌ Unable to connect to the database!");
         }
     }
 
     private boolean testDatabaseConnection() {
         try (Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD)) {
-            Optional.ofNullable(sendMail(conn)).ifPresent(errorMessage -> sendPushoverNotification("❌ " + errorMessage));
+            Optional.ofNullable(sendMail(conn)).ifPresent(errorMessage -> notifier.queueNotification("❌ " + errorMessage));
             return true;
         } catch (SQLException e) {
-            println("❌ Database connection failed: " + e.getMessage());
+            logUtil.println("❌ Database connection failed: " + e.getMessage());
             return false;
         }
     }
 
     private void searchCity(String city) {
         String url = String.format("https://www.pararius.com/apartments/%s/200-%d", city, MAX_RENT);
-        println("\n🔍 Searching apartments in: " + capitalize(city));
+        logUtil.println("\n🔍 Searching apartments in: " + capitalize(city));
         try {
             scrapeCity(city, url);
         } catch (IOException e) {
-            println("❗ Error fetching " + city + ": " + e.getMessage());
+            logUtil.println("❗ Error fetching " + city + ": " + e.getMessage());
         }
     }
 
@@ -100,7 +124,7 @@ public class ParariusScraper {
 
         Elements listings = doc.select("section.listing-search-item");
         if (listings.isEmpty()) {
-            println("No listings found.");
+            logUtil.println("No listings found.");
             return;
         }
 
@@ -117,20 +141,20 @@ public class ParariusScraper {
                 String address = addressElement != null ? addressElement.text().trim() : "N/A";
 
                 if (isUrlNotified(conn, link)) {
-                    println("⏭ Skipping already notified: " + link);
+                    logUtil.println("⏭ Skipping already notified: " + link);
                     continue;
                 }
 
                 String message = String.format("🌍 %s\n🏠 %s\n📍 %s\n💰 %s\n🔗 %s", capitalize(city), title, address, price, link);
-                println(message);
-                println("----------------------------");
+                logUtil.println(message);
+                logUtil.println("----------------------------");
 
-                if (sendPushoverNotification(message)) {
+                if (notifier.queueNotification(message)) {
                     storeNotifiedApartment(conn, capitalize(city), title, address, price, link);
                 }
             }
         } catch (SQLException e) {
-            println("❗ Database error: " + e.getMessage());
+            logUtil.println("❗ Database error: " + e.getMessage());
         }
     }
 
@@ -183,39 +207,6 @@ public class ParariusScraper {
             stmt.setString(5, link);
             stmt.executeUpdate();
         }
-    }
-
-    private boolean sendPushoverNotification(String message) {
-        try {
-            String urlString = "https://api.pushover.net/1/messages.json";
-            String params = String.format("token=%s&user=%s&message=%s",
-                    URLEncoder.encode(PUSHOVER_API_TOKEN, StandardCharsets.UTF_8),
-                    URLEncoder.encode(PUSHOVER_USER_KEY, StandardCharsets.UTF_8),
-                    URLEncoder.encode(message, StandardCharsets.UTF_8));
-
-            URL url = new URL(urlString);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setDoOutput(true);
-            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-
-            try (OutputStream os = conn.getOutputStream()) {
-                os.write(params.getBytes(StandardCharsets.UTF_8));
-            }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == 200) {
-                println("✅ Pushover notification sent successfully!");
-                return true;
-            } else {
-                String responseMessage = new String(conn.getErrorStream().readAllBytes(), StandardCharsets.UTF_8);
-                println("❗ Failed to send Pushover notification, response code: " + responseCode);
-                println("🔎 Pushover Response: " + responseMessage);
-            }
-        } catch (IOException e) {
-            println("❗ Error sending Pushover notification: " + e.getMessage());
-        }
-        return false;
     }
 
     private String capitalize(String input) {
@@ -280,12 +271,7 @@ public class ParariusScraper {
         message.setContent(htmlContent, "text/html; charset=utf-8");
 
         Transport.send(message);
-        println("Email sent successfully to " + to);
-    }
-
-    private void println(String msg) {
-        System.out.println(msg);
-        logs.add(msg);
+        logUtil.println("Email sent successfully to " + to);
     }
 
 }

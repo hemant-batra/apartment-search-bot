@@ -1,9 +1,6 @@
 package com.apartment.bot;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -20,7 +17,7 @@ public class ParariusScraperController {
     }
 
     @GetMapping(value = "/{action}", produces = APPLICATION_JSON_VALUE)
-    public List<String> scrape(@PathVariable String action) {
-        return parariusScraper.perform(action);
+    public List<String> scrape(@PathVariable String action, @RequestParam(required = false) Integer id) {
+        return parariusScraper.perform(action, id);
     }
 }
