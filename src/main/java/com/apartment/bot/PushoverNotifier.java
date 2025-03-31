@@ -30,7 +30,7 @@ public class PushoverNotifier {
 
     public boolean queueNotification(String message) {
         boolean status = messageQueue.offer(message);
-        logUtil.println("Pushover notification queuing status = " + message);
+        logUtil.println("Pushover notification queuing status = " + status + ", message = " + System.lineSeparator() + message);
         return status;
     }
 
