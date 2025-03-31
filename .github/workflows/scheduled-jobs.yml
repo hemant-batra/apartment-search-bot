@@ -1,0 +1,20 @@
+name: Apartment Search Cron Jobs
+
+on:
+  schedule:
+    - cron: "0 0 * * *"  # Runs every day at midnight (00:00 UTC) - HEARTBEAT
+    - cron: "*/5 * * * *"  # Runs every 5 minutes - SEARCH
+  workflow_dispatch:  # Allows manual execution
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call HEARTBEAT API
+        run: curl -X GET https://apartment-search-bot.onrender.com/scraper/HEARTBEAT
+
+  search:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call SEARCH API
+        run: curl -X GET https://apartment-search-bot.onrender.com/scraper/SEARCH
