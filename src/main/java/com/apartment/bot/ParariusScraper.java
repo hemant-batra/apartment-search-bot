@@ -98,10 +98,12 @@ public class ParariusScraper {
     }
 
     private void heartbeat() {
-        if (testDatabaseConnection()) {
-            notifier.queueNotification("❤️ I love searching apartments!");
-        } else {
-            notifier.queueNotification("❌ Unable to connect to the database!");
+        if (LocalTime.now().getHour() == 11) {
+            if (testDatabaseConnection()) {
+                notifier.queueNotification("❤️ I love searching apartments!");
+            } else {
+                notifier.queueNotification("❌ Unable to connect to the database!");
+            }
         }
     }
 
