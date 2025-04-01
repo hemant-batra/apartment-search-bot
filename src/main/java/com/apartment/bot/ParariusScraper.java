@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.sql.*;
 import java.text.SimpleDateFormat;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.*;
 
@@ -273,7 +274,11 @@ public class ParariusScraper {
         Message message = new MimeMessage(session);
         message.setFrom(new InternetAddress(from));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
-        message.setSubject("Your apartment search history on " + new SimpleDateFormat("dd MMMM yyyy").format(new Date()));
+
+        String subject = "Apartment Search History %s %s";
+        String date = new SimpleDateFormat("dd MMMM yyyy").format(new Date());
+        int hour = LocalTime.now().getHour();
+        message.setSubject(String.format(subject, date, hour));
 
         String htmlContent = generateHtmlTable(apartments);
         message.setContent(htmlContent, "text/html; charset=utf-8");
