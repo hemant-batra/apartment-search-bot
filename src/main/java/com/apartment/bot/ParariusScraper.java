@@ -277,10 +277,9 @@ public class ParariusScraper {
         message.setFrom(new InternetAddress(from));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
 
-        String subject = "%s Apartments Found %s";
+        String subject = "%s - %s Apartments";
         String timestamp = new SimpleDateFormat("dd MMMM yyyy HH:mm").format(new Date());
-        message.setSubject(String.format(subject, apartments.size(), timestamp));
-
+        message.setSubject(String.format(subject, timestamp, apartments.size()));
 
         String htmlContent = generateHtmlTable(apartments);
         message.setContent(htmlContent, "text/html; charset=utf-8");
