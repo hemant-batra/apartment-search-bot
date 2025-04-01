@@ -98,7 +98,7 @@ public class ParariusScraper {
     }
 
     private void heartbeat() {
-        if (LocalTime.now().getHour() == 11) {
+        if (LocalTime.now().getHour() == 12) {
             if (testDatabaseConnection()) {
                 notifier.queueNotification("❤️ I love searching apartments!");
             } else {
@@ -277,10 +277,10 @@ public class ParariusScraper {
         message.setFrom(new InternetAddress(from));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
 
-        String subject = "Apartment Search History %s %s";
-        String date = new SimpleDateFormat("dd MMMM yyyy").format(new Date());
-        int hour = LocalTime.now().getHour();
-        message.setSubject(String.format(subject, date, hour));
+        String subject = "%s Apartments Found %s";
+        String timestamp = new SimpleDateFormat("dd MMMM yyyy HH:mm").format(new Date());
+        message.setSubject(String.format(subject, apartments.size(), timestamp));
+
 
         String htmlContent = generateHtmlTable(apartments);
         message.setContent(htmlContent, "text/html; charset=utf-8");
