@@ -98,7 +98,7 @@ public class ParariusScraper {
     }
 
     private void heartbeat() {
-        if (LocalTime.now().getHour() == 12) {
+        if (LocalTime.now().getHour() == 22) {
             if (testDatabaseConnection()) {
                 notifier.queueNotification("❤️ I love searching apartments!");
             } else {
