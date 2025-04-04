@@ -15,9 +15,27 @@ import java.text.SimpleDateFormat;
 import java.time.LocalTime;
 import java.util.Date;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Component
 public class ParariusScraper {
+
+    private final List<String> HEARTBEAT_MESSAGES = List.of(
+            "🌟 शुभकामनाएँ",
+            "🏠 घर ज़रूर मिलेगा",
+            "🍽️ भोजन का समय",
+            "🌈 अच्छे दिन आएँगे",
+            "😴 नींद आ रही है",
+            "🍛 भूख लगी है",
+            "🧭 घर ढूँढता हूँ",
+            "🛏️ बिस्तर कहाँ है",
+            "💤 मुझे सोना है",
+            "🍦 आइसक्रीम खानी है",
+            "🔍 घर ढूँढ रहा हूँ",
+            "😴 आराम ज़रूरी है",
+            "🙌 घर मिलना तय है");
+
+    private final AtomicInteger counter = new AtomicInteger(0);
 
     private final List<String> CITIES = Arrays.asList("wageningen", "ede", "arnhem", "bennekom", "veenendaal");
     private final int MAX_RENT = 1300;
@@ -100,7 +118,8 @@ public class ParariusScraper {
     private void heartbeat() {
         if (LocalTime.now().getHour() == 19) {
             if (testDatabaseConnection()) {
-                notifier.queueNotification("❤️ I love searching apartments!");
+                int index = counter.getAndUpdate(i -> (i + 1) % HEARTBEAT_MESSAGES.size());
+                notifier.queueNotification(HEARTBEAT_MESSAGES.get(index));
             } else {
                 notifier.queueNotification("❌ Unable to connect to the database!");
             }
