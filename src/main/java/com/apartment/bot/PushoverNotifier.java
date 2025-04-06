@@ -14,7 +14,7 @@ import java.util.concurrent.*;
 @Component
 public class PushoverNotifier {
     private final String PUSHOVER_USER_KEY = "u7gru2v16gcnsid28ftgkpf6xzkoy1"; // Aditi
-    //private final String PUSHOVER_USER_KEY = "u1kkpk442tbarr5dz1egtdfuumrngn"; // Hemant
+    private final String PUSHOVER_DEVELOPER_KEY = "u1kkpk442tbarr5dz1egtdfuumrngn"; // Hemant
     private final String PUSHOVER_API_TOKEN = "ak1cvhpycz66kaymmiobmdyr6rbnpe";
 
     private LogUtil logUtil;
@@ -28,6 +28,10 @@ public class PushoverNotifier {
         this.logUtil = logUtil;
     }
 
+    public void notifyDeveloper(String message) {
+        sendPushoverNotification(PUSHOVER_DEVELOPER_KEY, message);
+    }
+
     public boolean queueNotification(String message) {
         boolean status = messageQueue.offer(message);
         logUtil.println("Pushover notification queuing status = " + status + System.lineSeparator() + message);
@@ -37,17 +41,17 @@ public class PushoverNotifier {
     private void processQueue() {
         String message = messageQueue.poll();
         if (message != null) {
-            sendPushoverNotification(message);
+            sendPushoverNotification(PUSHOVER_USER_KEY, message);
         }
     }
 
-    private boolean sendPushoverNotification(String message) {
+    private boolean sendPushoverNotification(String userKey, String message) {
         logUtil.println("Sending pushover notification" + System.lineSeparator() + message);
         try {
             String urlString = "https://api.pushover.net/1/messages.json";
             String params = String.format("token=%s&user=%s&message=%s",
                     URLEncoder.encode(PUSHOVER_API_TOKEN, StandardCharsets.UTF_8),
-                    URLEncoder.encode(PUSHOVER_USER_KEY, StandardCharsets.UTF_8),
+                    URLEncoder.encode(userKey, StandardCharsets.UTF_8),
                     URLEncoder.encode(message, StandardCharsets.UTF_8));
 
             URL url = new URL(urlString);
@@ -79,4 +83,6 @@ public class PushoverNotifier {
     public void shutdown() {
         scheduler.shutdown();
     }
+
+
 }
