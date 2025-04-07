@@ -253,27 +253,43 @@ public class ParariusScraper {
     }
 
     private String generateHtmlTable(List<Map<String, String>> apartments) {
+        TimeZone timeZone = TimeZone.getDefault(); // Gets the server's current timezone
+        String tzName = timeZone.getDisplayName(false, TimeZone.LONG); // Full name of the timezone
+
+        SimpleDateFormat sdf = new SimpleDateFormat("dd MMMM yyyy hh:mm a"); // 12-hour format with AM/PM
+        sdf.setTimeZone(timeZone);
+
+        String timestamp = sdf.format(new Date()) + " (" + tzName + ")";
+
         StringBuilder html = new StringBuilder();
-        html.append("<html><body>");
-        html.append("<table border='1' cellpadding='5' cellspacing='0' style='border-collapse: collapse; width: 100%;'>");
+        html.append("<html><head><style>")
+                .append("body { font-family: Arial, sans-serif; padding: 10px; }")
+                .append("p { font-size: 14px; margin-bottom: 10px; }")
+                .append("table { border-collapse: collapse; width: 100%; font-size: 14px; }")
+                .append("th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }")
+                .append("th { background-color: #f2f2f2; }")
+                .append("tr:nth-child(even) { background-color: #f9f9f9; }")
+                .append("a { color: #007BFF; text-decoration: none; }")
+                .append("a:hover { text-decoration: underline; }")
+                .append("</style></head><body>");
+
+        html.append("<p><strong>Report generated on:</strong> ").append(timestamp).append("</p>");
+        html.append("<table>");
         html.append("<tr>")
                 .append("<th>ID</th>")
                 .append("<th>City</th>")
                 .append("<th>Place</th>")
                 .append("<th>Location</th>")
                 .append("<th>Price</th>")
-                .append("<th>Details</th>")  // Link column
                 .append("</tr>");
 
         for (Map<String, String> apartment : apartments) {
             html.append("<tr>")
-                    .append("<td>").append(apartment.get("id")).append("</td>")
+                    .append("<td><a href='").append(apartment.get("link")).append("' target='_blank'>").append(apartment.get("id")).append("</a></td>")
                     .append("<td>").append(apartment.get("city")).append("</td>")
                     .append("<td>").append(apartment.get("place")).append("</td>")
                     .append("<td>").append(apartment.get("location")).append("</td>")
-                    .append("<td>").append(apartment.get("price")).append("</td>")
-                    .append("<td><a href='").append(apartment.get("link"))
-                    .append("' target='_blank'>Details</a></td>")
+                    .append("<td>").append(apartment.get("price").replaceAll("per month", "pm")).append("</td>")
                     .append("</tr>");
         }
 
@@ -305,9 +321,8 @@ public class ParariusScraper {
         message.setFrom(new InternetAddress(from));
         message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
 
-        String subject = "%s - %s Apartments";
-        String timestamp = new SimpleDateFormat("dd MMMM yyyy HH:mm").format(new Date());
-        message.setSubject(String.format(subject, timestamp, apartments.size()));
+        String subject = "%s apartments match criteria";
+        message.setSubject(String.format(subject, apartments.size()));
 
         String htmlContent = generateHtmlTable(apartments);
         message.setContent(htmlContent, "text/html; charset=utf-8");
