@@ -21,9 +21,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ParariusScraper {
 
     private final List<String> HEARTBEAT_MESSAGES = List.of(
-            "🧀 शाही पनीर",
-            "🧭 घर ढूँढता हूँ",
-            "🛏️ बिस्तर कहाँ है",
             "💤 मुझे सोना है",
             "🍵 अदरक वाली चाय",
             "🍦 आइसक्रीम खानी है",
@@ -94,7 +91,7 @@ public class ParariusScraper {
             int rowsAffected = stmt.executeUpdate();
             String message = switch (rowsAffected) {
                 case 0 -> "⚠ No records found with ID: " + id;
-                case 1 -> "\uD83D\uDDD1\uFE0F Deleted record with ID " + id;
+                case 1 -> "🗑️ Deleted record with ID " + id;
                 default -> "⚠ Unexpected! Rows deleted = " + rowsAffected;
             };
 
@@ -127,11 +124,11 @@ public class ParariusScraper {
     }
 
     private void heartbeat() {
-        if (LocalTime.now().getHour() == 19 && LocalTime.now().getMinute() > 30) {
+        if (LocalTime.now().getHour() == 19 && LocalTime.now().getMinute() > 40) {
             if (testDatabaseConnection()) {
                 int index = counter.getAndUpdate(i -> (i + 1) % HEARTBEAT_MESSAGES.size());
                 notifier.queueNotification(HEARTBEAT_MESSAGES.get(index));
-                notifier.notifyDeveloper(HEARTBEAT_MESSAGES.get(index));
+                //notifier.notifyDeveloper(HEARTBEAT_MESSAGES.get(index));
             } else {
                 notifier.queueNotification("❌ Unable to connect to the database!");
             }
